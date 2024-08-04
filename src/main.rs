@@ -1,6 +1,6 @@
 mod database;
 
-mod crc32;
+mod hash;
 
 
 use rayon::prelude::*;
@@ -12,7 +12,7 @@ use ntfs_reader::errors::{NtfsReaderError};
 use ntfs_reader::file_info::FileInfo;
 
 
-use crc32::{calculate_crc32};
+use hash::{calculate_blake2b512 as calculate_hash};
 fn main() {
     let path = std::path::Path::new("\\\\.\\C:");
 
@@ -41,7 +41,7 @@ fn mft_iteration(mft: &Mft) -> Vec<FileInfo>
     for number in FIRST_NORMAL_RECORD..mft.max_record {
         if let Some(file) = mft.get_record(number) {
             let info = FileInfo::new(mft, &file);
-            if info.size > 7283013 {
+            if !info.name.ends_with(".pdf") {
                 continue;
             }
             if info.is_directory {
@@ -55,7 +55,7 @@ fn mft_iteration(mft: &Mft) -> Vec<FileInfo>
 
 struct FileTile {
     path: String,
-    crc32: u32,
+    hash: u32,
     date: String,
 }
 
@@ -72,21 +72,21 @@ fn update_database(file_vec: Vec<FileInfo>) {
         let db = Arc::clone(&db);
         let db = db.lock().unwrap();
 
-        match db.get_crc32(path.clone()).unwrap() {
-            Some(_crc32) => {
+        match db.get_hash(path.clone()).unwrap() {
+            Some(_hash) => {
                 let date_now = db.get_date(path.clone()).unwrap().unwrap();
                 if date_now != date {
-                    let crc32_now = calculate_crc32(path.clone());
-                    db.insert_path(crc32_now, path.clone()).unwrap();
-                    db.insert_crc32(path.clone(), crc32_now).unwrap();
+                    let hash_now = calculate_hash(path.clone());
+                    db.insert_path(hash_now.clone(), path.clone()).unwrap();
+                    db.insert_hash(path.clone(), hash_now).unwrap();
                     db.insert_date(path.clone(), date.clone()).unwrap();
                 }
             }
             None => {
-                let crc32 = calculate_crc32(path.clone());
-                println!("------ Inserting path: {}, crc32: {} ------", &path, crc32);
-                db.insert_path(crc32, path.clone()).unwrap();
-                db.insert_crc32(path.clone(), crc32).unwrap();
+                let hash = calculate_hash(path.clone());
+                println!("------ Inserting path: {}, hash: {} ------", &path, hash);
+                db.insert_path(hash.clone(), path.clone()).unwrap();
+                db.insert_hash(path.clone(), hash).unwrap();
                 db.insert_date(path.clone(), date.clone()).unwrap();
             }
         }
@@ -96,15 +96,15 @@ fn update_database(file_vec: Vec<FileInfo>) {
 mod tests {
     use super::*;
     #[test]
-    fn test_index_file_crc32() {
+    fn test_index_file_hash() {
         let db = database::NtfsDataBase::new();
         let path = String::from("\\\\.\\C:\\Users\\29115\\RustroverProjects\\Verifile\\test.txt");
-        let crc32 = calculate_crc32(path.clone());
-        db.insert_crc32(path.clone(), crc32).unwrap();
-        db.insert_path(crc32, path.clone()).unwrap();
+        let hash = calculate_hash(path.clone());
+        db.insert_hash(path.clone(), hash.clone()).unwrap();
+        db.insert_path(hash.clone(), path.clone()).unwrap();
         db.insert_date(path.clone(), String::from("0")).unwrap();
-        println!("{}", crc32);
-        let path = db.get_path(crc32).unwrap().unwrap();
+        println!("{}", hash);
+        let path = db.get_path(hash).unwrap().unwrap();
         println!("{}", path);
         assert_eq!(path, String::from("\\\\.\\C:\\Users\\29115\\RustroverProjects\\Verifile\\test.txt"));
     }

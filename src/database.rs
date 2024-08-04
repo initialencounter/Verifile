@@ -1,12 +1,7 @@
 use redb::{Database, Error, ReadTransaction, TableDefinition, TransactionError, WriteTransaction};
 
-struct FileInfo {
-    pub size: i64,
-    pub last_accessed: i64,
-}
-
-const TABLE_PATH: TableDefinition<String, u32> = TableDefinition::new("PATH_CRC32");
-const TABLE_CRC32: TableDefinition<u32, String> = TableDefinition::new("CRC32_PATH");
+const TABLE_PATH: TableDefinition<String, String> = TableDefinition::new("PATH_HASH");
+const TABLE_HASH: TableDefinition<String, String> = TableDefinition::new("HASH_PATH");
 const TABLE_DATE: TableDefinition<String, String> = TableDefinition::new("PATH_DATE");
 
 pub(crate) struct NtfsDataBase {
@@ -20,14 +15,15 @@ impl NtfsDataBase {
             Ok(db) => {
                 NtfsDataBase { db }
             },
-            Err(err) => {
+            Err(_err) => {
                 let db = Database::create("fileInfo.redb").unwrap();
                 let write_txn = db.begin_write().unwrap();
                 write_txn.open_table(TABLE_PATH).unwrap();
-                write_txn.open_table(TABLE_CRC32).unwrap();
+                write_txn.open_table(TABLE_HASH).unwrap();
                 write_txn.open_table(TABLE_DATE).unwrap();
                 write_txn.commit().unwrap();
-                panic!("Error: An unknown error occurred.{:?}", err)
+                println!("fileInfo.redb not found, created a new one");
+                NtfsDataBase { db }
             }
         }
     }
@@ -40,23 +36,11 @@ impl NtfsDataBase {
         self.db.begin_write()
     }
 
-    fn insert_string_key_value(
+    fn insert_value(
         &self,
         txn: &mut WriteTransaction,
-        table_def: TableDefinition<String, u32>,
+        table_def: TableDefinition<String, String>,
         key: String,
-        value: u32,
-    ) -> Result<(), Error> {
-        let mut table = txn.open_table(table_def)?;
-        table.insert(key, value)?;
-        Ok(())
-    }
-
-    fn insert_u32_key_value(
-        &self,
-        txn: &mut WriteTransaction,
-        table_def: TableDefinition<u32, String>,
-        key: u32,
         value: String,
     ) -> Result<(), Error> {
         let mut table = txn.open_table(table_def)?;
@@ -64,48 +48,43 @@ impl NtfsDataBase {
         Ok(())
     }
 
-    fn get_string_key_value(
+    fn get_value(
         &self,
         txn: &ReadTransaction,
-        table_def: TableDefinition<String, u32>,
+        table_def: TableDefinition<String, String>,
         key: String,
-    ) -> Result<Option<u32>, Error> {
-        let table = txn.open_table(table_def)?;
-        Ok(table.get(key)?.map(|v| v.value()))
-    }
-
-    fn get_u32_key_value(
-        &self,
-        txn: &ReadTransaction,
-        table_def: TableDefinition<u32, String>,
-        key: u32,
     ) -> Result<Option<String>, Error> {
         let table = txn.open_table(table_def)?;
         Ok(table.get(key)?.map(|v| v.value()))
     }
 
-    pub fn insert_crc32(&self, key: String, value: u32) -> Result<(), Error> {
+    pub fn insert_hash(&self, key: String, value: String) -> Result<(), Error> {
         let mut txn = self.begin_write_txn()?;
-        self.insert_string_key_value(&mut txn, TABLE_PATH, key, value)?;
+        self.insert_value(&mut txn, TABLE_PATH, key, value)?;
         txn.commit()?;
         Ok(())
     }
 
-    pub fn get_crc32(&self, key: String) -> Result<Option<u32>, Error> {
+    pub fn get_hash(&self, key: String) -> Result<Option<String>, Error> {
         let txn = self.begin_read_txn()?;
-        return  self.get_string_key_value(&txn, TABLE_PATH, key)
+        return  self.get_value(&txn, TABLE_PATH, key)
     }
 
-    pub fn insert_path(&self, key: u32, value: String) -> Result<(), Error> {
+    pub fn insert_path(&self, key: String, value: String) -> Result<(), Error> {
         let mut txn = self.begin_write_txn()?;
-        self.insert_u32_key_value(&mut txn, TABLE_CRC32, key, value)?;
+        let mut path = match self.get_path(key.clone()) { 
+            Ok(Some(path)) => path,
+            _ => String::from(""),
+        };
+        path = format!("{}\n{}", path, value);
+        self.insert_value(&mut txn, TABLE_HASH, key, path)?;
         txn.commit()?;
         Ok(())
     }
 
-    pub fn get_path(&self, key: u32) -> Result<Option<String>, Error> {
+    pub fn get_path(&self, key: String) -> Result<Option<String>, Error> {
         let txn = self.begin_read_txn()?;
-        self.get_u32_key_value(&txn, TABLE_CRC32, key)
+        self.get_value(&txn, TABLE_HASH, key)
     }
 
     pub fn insert_date(&self, key: String, value: String) -> Result<(), Error> {

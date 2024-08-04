@@ -3,7 +3,7 @@ use std::io::{BufReader, Read};
 use crc32fast::Hasher;
 use blake2::{Blake2b512, Digest};
 
-pub fn calculate_crc32(path: String) -> u32 {
+pub fn calculate_crc32(path: String) -> String {
     let file = File::open(&path);
     return match file {
         Ok(file) => {
@@ -17,11 +17,9 @@ pub fn calculate_crc32(path: String) -> u32 {
                 }
                 hasher.update(&buffer[..n]);
             }
-            hasher.finalize()
+            hasher.finalize().to_string()
         }
-        Err(_) => {
-            0
-        }
+        Err(_) => String::from("0")
     }
 }
 
@@ -34,7 +32,7 @@ pub fn calculate_blake2b512(path: String) -> String {
             let mut hasher = Blake2b512::new();
             let mut buffer = [0u8; 1024];
             loop {
-                let n = reader.read(&mut buffer).unwrap();
+                let n = reader.read(&mut buffer).unwrap_or_else(|_| 0);
                 if n == 0 {
                     break;
                 }
