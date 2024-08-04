@@ -11,4 +11,9 @@ keywords = ["filesystem", "ntfs"]
 categories = ["filesystem"]
 
 [dependencies]
-ntfs-reader = "0.4.0"
+blake2 = "0.10.6"
+crc32fast = "1.4.2"
+ntfs-reader = "0.4.1"
+redb = "2.1.1"
+hex = "0.4.3"
+rayon = "1.10.0"
