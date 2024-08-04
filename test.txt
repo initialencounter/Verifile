@@ -1,0 +1,30 @@
+29 | pub fn calculate_blake2b512(path: String) -> String {
+   |        ^^^^^^^^^^^^^^^^^^^^
+
+warning: `Verifile` (bin "Verifile" test) generated 3 warnings                                                                                                                                                                                     
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.32s
+     Running unittests src\main.rs (target\debug\deps\Verifile-44d2019273acbbe6.exe)
+
+running 1 test
+test tests::test_index_file_crc32 ... FAILED
+
+failures:
+
+---- tests::test_index_file_crc32 stdout ----
+0
+\\.\C:\Users\29115\AppData\Local\Packages\microsoft.windowscommunicationsapps_8wekyb3d8bbwe\AC\Temp\mat-debug-2832.log
+thread 'tests::test_index_file_crc32' panicked at src\main.rs:111:9:
+assertion `left == right` failed
+  left: "\\\\.\\C:\\Users\\29115\\AppData\\Local\\Packages\\microsoft.windowscommunicationsapps_8wekyb3d8bbwe\\AC\\Temp\\mat-debug-2832.log"
+ right: "\\\\.\\C:\\Users\\29115\\RustroverProjects\\Verifile\\src\\test.txt"
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    tests::test_index_file_crc32
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+error: test failed, to rerun pass `--bin Verifile`
+
+Verifile on  master [!+⇡] is 📦 v0.1.0 via 🦀 v1.78.0

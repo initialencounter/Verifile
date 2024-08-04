@@ -92,3 +92,21 @@ fn update_database(file_vec: Vec<FileInfo>) {
         }
     });
 }
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn test_index_file_crc32() {
+        let db = database::NtfsDataBase::new();
+        let path = String::from("\\\\.\\C:\\Users\\29115\\RustroverProjects\\Verifile\\test.txt");
+        let crc32 = calculate_crc32(path.clone());
+        db.insert_crc32(path.clone(), crc32).unwrap();
+        db.insert_path(crc32, path.clone()).unwrap();
+        db.insert_date(path.clone(), String::from("0")).unwrap();
+        println!("{}", crc32);
+        let path = db.get_path(crc32).unwrap().unwrap();
+        println!("{}", path);
+        assert_eq!(path, String::from("\\\\.\\C:\\Users\\29115\\RustroverProjects\\Verifile\\test.txt"));
+    }
+}
+
