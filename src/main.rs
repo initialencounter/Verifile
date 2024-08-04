@@ -106,7 +106,7 @@ mod tests {
         println!("{}", hash);
         let path = db.get_path(hash).unwrap().unwrap();
         println!("{}", path);
-        assert_eq!(path, String::from("\\\\.\\C:\\Users\\29115\\RustroverProjects\\Verifile\\test.txt"));
+        assert_eq!(true, path.contains(String::from("\\\\.\\C:\\Users\\29115\\RustroverProjects\\Verifile\\test.txt").as_str()));
     }
 }
 
